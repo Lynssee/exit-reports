@@ -16,9 +16,16 @@ const firebaseConfig = {
 
 const firestoreDatabaseId = import.meta.env.VITE_FIRESTORE_DATABASE_ID || appleConfig.firestoreDatabaseId;
 
+if (!firestoreDatabaseId) {
+  console.warn("Firestore databaseId is not defined. Falling back to '(default)'.");
+} else if (firestoreDatabaseId === '(default)' && appleConfig.firestoreDatabaseId) {
+  console.info("Using '(default)' database ID. Note: AI Studio projects often use custom IDs like '" + appleConfig.firestoreDatabaseId + "'.");
+}
+
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firestoreDatabaseId);
+// Always prefer the explicit ID if provided, otherwise fallback to config or default
+export const db = getFirestore(app, firestoreDatabaseId || appleConfig.firestoreDatabaseId || '(default)');
 
 export interface FirestoreErrorInfo {
   error: string;

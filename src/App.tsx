@@ -276,19 +276,6 @@ export default function App() {
                 </div>
               </section>
     
-              <section className="mt-auto">
-                <div className="bg-slate-950 rounded-2xl p-5 text-white relative overflow-hidden group hover:shadow-xl transition-all cursor-pointer border border-slate-900">
-                  <div className="relative z-10">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-1">Export Data</p>
-                    <p className="text-sm font-bold mb-4">Master Spreadsheet</p>
-                    <button className="bg-red-600 text-white w-full flex items-center justify-center gap-2 text-[11px] font-black py-2.5 px-3 rounded-lg shadow-sm hover:bg-white hover:text-black transition-all">
-                      <Download size={14} />
-                      DOWNLOAD EXCEL
-                    </button>
-                  </div>
-                  <div className="absolute -right-8 -bottom-8 w-24 h-24 bg-red-600/10 rounded-full blur-2xl group-hover:bg-red-600/20 transition-colors"></div>
-                </div>
-              </section>
             </motion.aside>
           )}
         </AnimatePresence>

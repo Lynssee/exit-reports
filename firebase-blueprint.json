@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "Comment": {
+        "title": "Comment",
+        "description": "A comment on a task",
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "text": { "type": "string" },
+          "sender": { "type": "string", "enum": ["User", "Developer"] },
+          "createdAt": { "type": "number" },
+          "photoUrl": { "type": "string" },
+          "authorId": { "type": "string" }
+        },
+        "required": ["id", "sender", "createdAt", "authorId"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task in the board",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string", "enum": ["Produksi", "RMC", "Finance", "Inventory", "Project", "Procurement", "Marketing/Sales", "Other"] },
+        "status": { "type": "string", "enum": ["New", "Waiting", "In Progress", "Need Review", "Done"] },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "createdAt": { "type": "number" },
+        "ownerId": { "type": "string" },
+        "photoUrls": { "type": "array", "items": { "type": "string" } },
+        "comments": { "type": "array", "items": { "$ref": "#/entities/Comment" } },
+        "viewedBy": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "title", "description", "category", "status", "priority", "createdAt", "ownerId", "comments"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": "#/entities/Task",
+      "description": "All tasks in the system"
+    }
+  }
+}

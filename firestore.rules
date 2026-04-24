@@ -1,0 +1,82 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    // Validation Blueprint for Task
+    function isValidComment(comment) {
+      return comment.keys().hasAll(['id', 'text', 'sender', 'createdAt', 'authorId']) &&
+             comment.id is string && comment.id.size() <= 128 &&
+             comment.text is string && comment.text.size() <= 5000 &&
+             comment.sender in ['User', 'Developer'] &&
+             comment.createdAt is number &&
+             comment.authorId is string && comment.authorId.size() <= 128 &&
+             (comment.keys().hasAll(['photoUrls']) ? (comment.photoUrls is list && comment.photoUrls.size() <= 5) : true);
+    }
+    
+    function areCommentsValid(commentsList) {
+      // Limit to 50 comments and validate the structure of the last added comment if list is not empty
+      return commentsList is list && commentsList.size() <= 50 &&
+             (commentsList.size() > 0 ? (commentsList[0] is map && commentsList[0].authorId is string) : true);
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['id', 'title', 'description', 'category', 'status', 'priority', 'createdAt', 'ownerId', 'comments']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 150 &&
+             data.description is string && data.description.size() <= 600000 &&
+             data.category in ['Produksi', 'RMC', 'Finance', 'Inventory', 'Project', 'Procurement', 'Marketing/Sales', 'Other'] &&
+             data.status in ['New', 'Waiting', 'In Progress', 'Need Review', 'Done'] &&
+             data.priority in ['Low', 'Medium', 'High'] &&
+             data.createdAt is number &&
+             data.ownerId is string && data.ownerId.size() <= 128 &&
+             (data.keys().hasAll(['photoUrls']) ? (data.photoUrls is list && data.photoUrls.size() <= 10) : true) &&
+             (data.keys().hasAll(['viewedBy']) ? (data.viewedBy is list && data.viewedBy.size() <= 100) : true) &&
+             areCommentsValid(data.comments);
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      
+      allow create: if isSignedIn() &&
+                    isValidId(taskId) &&
+                    incoming().keys().hasAll(['id', 'title', 'description', 'category', 'status', 'priority', 'createdAt', 'ownerId', 'comments']) &&
+                    isValidTask(incoming()) &&
+                    incoming().ownerId == request.auth.uid &&
+                    incoming().id == taskId;
+                    
+      allow update: if isSignedIn() &&
+                    isValidId(taskId) &&
+                    isValidTask(incoming()) &&
+                    incoming().id == existing().id &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().ownerId == existing().ownerId &&
+                    (
+                      // Action: Update Status
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'viewedBy'])) ||
+                      // Action: Update Details
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'priority', 'photoUrls', 'viewedBy'])) ||
+                      // Action: Add Comment / Mark as Read
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['comments', 'viewedBy'])) ||
+                      // Action: Pure Mark as Read
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['viewedBy']))
+                    );
+
+      allow delete: if isSignedIn() && isValidId(taskId);
+    }
+  }
+}
